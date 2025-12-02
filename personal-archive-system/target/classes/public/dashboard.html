@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="dashboard" role="application" aria-label="用户控制台">
+    <aside class="sidebar" aria-label="侧边栏">
+      <h2>控制面板</h2>
+      <nav aria-label="主导航">
+        <ul>
+          <li><a href="#" data-panel="profile" class="active" aria-current="page">个人界面</a></li>
+          <li><a href="#" data-panel="achievements">成就列表</a></li>
+          <li><a href="#" data-panel="settings">个人设置</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main" id="main-content" tabindex="-1">
+      <!-- 个人界面面板 -->
+      <section id="profile" class="panel" data-name="profile">
+        <h3>个人界面</h3>
+        <p>欢迎！这里显示个人信息的摘要，例如头像、用户名、简介与近期活动。</p>
+
+        <!-- 搜索栏：在个人界面提供多字段检索（已移除清除按钮） -->
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+          <input id="ach-search" class="input-item" type="search" placeholder="搜索成就：名称、描述或标签（回车执行）" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e5e7eb;">
+        </div>
+
+        <!-- 统计区域（仅在个人界面显示） -->
+        <div id="dashboard-stats" class="panel" aria-label="统计概览" style="display:flex;align-items:center;gap:18px;margin-top:12px;flex-wrap:wrap;">
+          <div class="stats-cards" style="display:flex;gap:12px;flex:1;min-width:240px;flex-wrap:wrap;">
+            <div class="stat-card" id="stat-total" style="background:#fff;padding:12px;border-radius:8px;min-width:160px;box-shadow:0 4px 10px rgba(15,23,42,0.05);">
+              <div style="font-size:13px;color:#6b7280;">成就总数</div>
+              <div id="stat-total-val" style="font-size:20px;font-weight:600;color:#111827;margin-top:6px;">—</div>
+            </div>
+            <div class="stat-card" id="stat-year" style="background:#fff;padding:12px;border-radius:8px;min-width:160px;box-shadow:0 4px 10px rgba(15,23,42,0.05);">
+              <div style="font-size:13px;color:#6b7280;">本年新增</div>
+              <div id="stat-year-val" style="font-size:20px;font-weight:600;color:#111827;margin-top:6px;">—</div>
+            </div>
+            <div class="stat-card" id="stat-tags" style="background:#fff;padding:12px;border-radius:8px;min-width:160px;box-shadow:0 4px 10px rgba(15,23,42,0.05);">
+              <div style="font-size:13px;color:#6b7280;">技能标签数</div>
+              <div id="stat-tags-val" style="font-size:20px;font-weight:600;color:#111827;margin-top:6px;">—</div>
+            </div>
+            <div class="stat-card" id="stat-storage" style="background:#fff;padding:12px;border-radius:8px;min-width:160px;box-shadow:0 4px 10px rgba(15,23,42,0.05);">
+              <div style="font-size:13px;color:#6b7280;">存储用量 (MB)</div>
+              <div id="stat-storage-val" style="font-size:20px;font-weight:600;color:#111827;margin-top:6px;">—</div>
+            </div>
+          </div>
+          <div style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;position:relative;">
+            <canvas id="stats-pie" width="160" height="160" aria-label="统计饼图"></canvas>
+            <!-- tooltip 显示饼图区块信息 -->
+            <div id="pie-tooltip" role="status" aria-live="polite"
+              style="position:fixed;display:none;padding:6px 8px;background:rgba(17,24,39,0.95);color:#fff;border-radius:6px;font-size:13px;pointer-events:none;z-index:9999;white-space:nowrap;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 右下角添加成就按钮（位于个人界面面板内） -->
+        <button id="add-ach-btn" type="button" class="login-btn add-ach-float" aria-label="添加成就">添加成就</button>
+
+        <!-- 添加成就表单保留（默认隐藏），会在用户点击右下角按钮后展示（通过 sessionStorage 刷新后展开） -->
+        <div style="margin-top:14px;">
+          <form id="add-ach-form" hidden aria-hidden="true" style="margin-top:10px;">
+            <div style="margin-bottom:8px;">
+              <input id="ach-title" class="input-item" placeholder="成就标题" required style="padding:10px;border-radius:8px;width:100%;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <input id="ach-date" class="input-item" type="date" style="padding:10px;border-radius:8px;width:100%;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <input id="ach-tags" class="input-item" placeholder="标签（用逗号分隔）" style="padding:10px;border-radius:8px;width:100%;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <label for="ach-photo" style="display:block;margin-bottom:6px;color:#6b7280;font-size:13px;">上传照片（可选）</label>
+              <input id="ach-photo" name="photo" type="file" accept="image/*" style="width:100%;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <textarea id="ach-desc" class="input-item" placeholder="成就描述（可选）" style="padding:10px;border-radius:8px;width:100%;height:80px;"></textarea>
+            </div>
+            <div class="add-form-actions">
+              <button id="submit-ach" type="submit" class="login-btn btn-gray">提交成就</button>
+              <button id="cancel-ach" type="button" style="margin-left:8px;padding:8px 12px;border-radius:8px;">取消</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="achievements" class="panel" data-name="achievements" hidden>
+        <h3>成就列表</h3>
+        <p>以下为你导入的个人成就（从数据库/后端获取）：</p>
+        <!-- 加载与错误提示 -->
+        <div id="achievements-status" class="sr-only" aria-live="polite"></div>
+        <!-- 成就渲染容器 -->
+        <div id="achievements-list" class="achievements-list" aria-live="polite"></div>
+      </section>
+
+      <section id="settings" class="panel" data-name="settings" hidden>
+        <h3>个人设置</h3>
+        <p>在此可修改个人资料、密码或通知偏好等设置。</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const links = document.querySelectorAll('.sidebar a[data-panel]');
+      const panels = document.querySelectorAll('.panel');
+      const addBtn = document.getElementById('add-ach-btn');
+      const addForm = document.getElementById('add-ach-form');
+      const cancelBtn = document.getElementById('cancel-ach');
+      const submitBtn = document.getElementById('submit-ach');
+
+      // 页面加载时：若之前设置了显示添加表单的标记，则展开表单并聚焦
+      if (sessionStorage.getItem('showAddForm') === 'true') {
+        if (addForm) {
+          addForm.hidden = false;
+          addForm.setAttribute('aria-hidden', 'false');
+          const first = document.getElementById('ach-title');
+          if (first) first.focus();
+        }
+        try { sessionStorage.removeItem('showAddForm'); } catch (err) {}
+      }
+
+      function showPanel(name, targetLink) {
+        panels.forEach(p => {
+          if (p.dataset.name === name) {
+            p.hidden = false;
+            p.scrollTop = 0;
+          } else {
+            p.hidden = true;
+          }
+        });
+        links.forEach(l => {
+          l.classList.toggle('active', l === targetLink);
+          l.setAttribute('aria-current', l === targetLink ? 'page' : 'false');
+        });
+        const main = document.getElementById('main-content');
+        if (main) main.focus();
+        // 离开个人界面时清空搜索栏
+        if (name !== 'profile') {
+          const s = document.getElementById('ach-search');
+          if (s) { s.value = ''; }
+        }
+        // 当切换到成就面板时，尝试加载成就数据
+        if (name === 'achievements') {
+          loadAchievements();
+        }
+        // 当切换到个人界面时加载统计（统计仅在个人界面显示）
+        if (name === 'profile') {
+          loadStats().catch(()=>{});
+        }
+      }
+
+     // 点击右上角“添加成就”：设置标记并刷新页面，刷新后脚本会展开表单
+     if (addBtn) {
+       addBtn.addEventListener('click', function (e) {
+         try { sessionStorage.setItem('showAddForm', 'true'); } catch (err) {}
+         location.reload();
+       });
+     }
+
+     // 取消按钮：隐藏表单并清除标记（以防用户回退）
+     if (cancelBtn) {
+       cancelBtn.addEventListener('click', function () {
+         if (addForm) {
+           addForm.hidden = true;
+           addForm.setAttribute('aria-hidden', 'true');
+         }
+         try { sessionStorage.removeItem('showAddForm'); } catch (err) {}
+       });
+     }
+
+      links.forEach(link => {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          const name = this.dataset.panel;
+          showPanel(name, this);
+        });
+      });
+
+     // achievements 缓存（供搜索与渲染使用）
+     let achievementsCache = [];
+
+     // 搜索输入处理：按 Enter 执行搜索（支持空格或逗号分隔的多个关键词）
+     const searchInput = document.getElementById('ach-search');
+     // 确保成就已加载（若未加载则调用 loadAchievements 并等待）
+     async function ensureAchievementsLoaded() {
+       if (!achievementsCache.length) {
+         await loadAchievements();
+       }
+       return document.getElementById('achievements-list');
+     }
+     if (searchInput) {
+       searchInput.addEventListener('keydown', async function (e) {
+         if (e.key !== 'Enter') return;
+         e.preventDefault();
+         const q = this.value.trim().toLowerCase();
+         // 确保数据已加载并获取目标容器
+         const listEl = await ensureAchievementsLoaded();
+         if (!listEl) return;
+         // 切换到成就列表面板（让用户看到结果并更新侧栏高亮）
+         const achLink = document.querySelector('.sidebar a[data-panel="achievements"]') || null;
+         showPanel('achievements', achLink);
+         // 若为空查询则显示全部
+         if (!q) {
+           renderAchievements(achievementsCache, listEl, { replace: true });
+           // 滚动到顶部以便用户看到列表
+           listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+           return;
+         }
+         // 多关键词支持，按空格或逗号分隔
+         const terms = q.split(/[\s,]+/).filter(Boolean);
+         const filtered = achievementsCache.filter(item => {
+           const title = (item.title || '').toLowerCase();
+           const desc = (item.description || '').toLowerCase();
+           const tags = (item.tags || []).join(' ').toLowerCase();
+           return terms.every(term => title.includes(term) || desc.includes(term) || tags.includes(term));
+         });
+         if (!filtered.length) {
+           // 搜索但未命中：显示高亮提示（可访问性）
+           listEl.innerHTML = '<div class="no-results" role="status" aria-live="polite">未搜索到成就</div>';
+         } else {
+           renderAchievements(filtered, listEl, { replace: true });
+         }
+         // 确保用户能看到结果顶部
+         listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+       });
+     }
+
+      // 加载成就的函数：向后端请求，失败时使用回退数据
+      async function loadAchievements() {
+        const statusEl = document.getElementById('achievements-status');
+        const listEl = document.getElementById('achievements-list');
+        if (!listEl || !statusEl) return;
+        // 若已加载过且非强制刷新，直接渲染缓存（并返回）
+        if (listEl.dataset.loaded === 'true' && achievementsCache.length) { renderAchievements(achievementsCache, listEl, { replace: true }); return; }
+
+        statusEl.classList.remove('sr-only');
+        statusEl.textContent = '加载中...';
+        listEl.innerHTML = '';
+        try {
+          const res = await fetch('/api/user/achievements', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('网络错误');
+          const data = await res.json();
+          // 记录缓存并渲染
+          achievementsCache = Array.isArray(data) ? data : [];
+          // 合并多条测试用例到缓存（避免重复）
+          const now = new Date();
+          const testCases = [
+            { id: 'tst-001', title: '测试用例 A - 搜索关键字示例', description: '此项用于测试关键词 "搜索" 与标签匹配。', date: `${now.getFullYear()}-01-15`, tags: ['搜索','样例A'] },
+            { id: 'tst-002', title: '测试用例 B - 自动化导入', description: '用于测试自动导入功能与图片展示（无图）。', date: `${now.getFullYear()}-03-20`, tags: ['自动化','样例B'] },
+            { id: 'tst-003', title: '测试用例 C - 回归验证', description: '回归验证用例，包含标签 "回归" 与描述文本。', date: `${now.getFullYear()}-05-05`, tags: ['回归','样例C'] }
+          ];
+          testCases.forEach(tc => {
+            if (!achievementsCache.find(it => String(it.id) === String(tc.id))) {
+              achievementsCache.unshift(tc);
+            }
+          });
+           renderAchievements(achievementsCache, listEl, { replace: true });
+         } catch (err) {
+           // 回退为一组测试用例（每项不同，便于本地验证）
+           const fallbackTests = [
+             { id: 'tst-101', title: '回退测试 1 - 基础项', date: '2025-01-02', description: '回退数据：基础测试项，标签为 base。', tags:['base','回退'] },
+             { id: 'tst-102', title: '回退测试 2 - 活跃示例', date: '2025-02-10', description: '回退数据：活跃相关测试项。', tags:['活跃','回退'] },
+             { id: 'tst-103', title: '回退测试 3 - 贡献示例', date: '2025-03-05', description: '回退数据：贡献相关测试项。', tags:['贡献','回退'] }
+           ];
+           achievementsCache = fallbackTests;
+           renderAchievements(achievementsCache, listEl, { replace: true });
+           statusEl.textContent = '加载失败，已显示本地示例数据。';
+           setTimeout(() => { statusEl.classList.add('sr-only'); }, 3000);
+           return;
+         }
+         statusEl.classList.add('sr-only');
+       }
+
+     // 渲染成就：items - 数组；opts: { replace: true } 表示替换显示（用于搜索/刷新），否则为追加（用于单项追加）
+     function renderAchievements(items, container, opts) {
+       container.dataset.loaded = 'true';
+       if (!Array.isArray(items) || items.length === 0) {
+         container.innerHTML = '<p>未找到成就。</p>';
+         return;
+       }
+       const replace = opts && opts.replace;
+       // 当替换时同步更新缓存（搜索时不要覆盖原有缓存）
+       if (replace) achievementsCache = items.slice();
+       // 构建列表
+       const existingUl = container.querySelector('ul');
+       const ul = replace || !existingUl ? document.createElement('ul') : existingUl;
+       if (replace || !existingUl) { ul.style.listStyle = 'none'; ul.style.padding = '0'; ul.style.margin = '0'; ul.innerHTML = ''; }
+       items.forEach(item => {
+         // 若是 replace 并且 item 来自后端，避免重复追加（简单 id 检查）
+         if (!replace && existingUl && item.id) {
+           if (existingUl.querySelector(`[data-id="${item.id}"]`)) return;
+         }
+         // 使用类名以便通过 CSS 控制间距/样式；把项内容包到可点击链接中
+         const li = document.createElement('li');
+         li.className = 'achievement-item';
+         li.dataset.id = item.id || '';
+         const tagHtml = (item.tags || []).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join(' ');
+         const idParam = encodeURIComponent(item.id || '');
+         const href = idParam ? `achievement.html?id=${idParam}` : '#';
+         li.innerHTML = `
+           <a class="achievement-link" href="${href}" aria-label="查看成就：${escapeHtml(item.title || '未命名成就')}">
+             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+               <div style="flex:1;">
+                 <strong style="font-size:16px;color:#1f2937;">${escapeHtml(item.title || '未命名成就')}</strong>
+                 <div style="color:#6b7280;margin-top:6px;">${escapeHtml(item.description || '')}</div>
+                 <div style="margin-top:8px;">${tagHtml}</div>
+               </div>
+               <div style="color:#9ca3af;font-size:13px;min-width:90px;text-align:right;">${escapeHtml(item.date || '')}</div>
+             </div>
+           </a>
+         `;
+         ul.appendChild(li);
+       });
+       if (replace || !existingUl) { container.innerHTML = ''; container.appendChild(ul); }
+     }
+
+      // 简单防 XSS 的转义（前端渲染时使用）
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+     // 统计加载与渲染（修改：使用已用/总内存构建饼图，默认总内存 = 1024 MB）
+     async function loadStats() {
+       const totalEl = document.getElementById('stat-total-val');
+       const yearEl = document.getElementById('stat-year-val');
+       const tagsEl = document.getElementById('stat-tags-val');
+       const storageEl = document.getElementById('stat-storage-val');
+       const canvas = document.getElementById('stats-pie');
+       if (!totalEl || !yearEl || !tagsEl || !storageEl || !canvas) return;
+
+       // 默认占位
+       totalEl.textContent = '加载中…';
+       yearEl.textContent = '加载中…';
+       tagsEl.textContent = '加载中…';
+       storageEl.textContent = '加载中…';
+
+       try {
+         const res = await fetch('/api/user/stats', { credentials: 'same-origin' });
+         if (!res.ok) throw new Error('网络错误');
+         const data = await res.json();
+         // 期望结构可以包含 storageUsedMB 与 storageTotalMB；兼容旧字段 storageMB（视为已用）
+         const used = Number(data.storageUsedMB ?? data.storageMB) || 0;
+         const totalMem = Number(data.storageTotalMB) || 1024; // 默认 1GB = 1024MB
+         // 将其他统计信息保留（若后端提供）
+         const total = Number(data.totalAchievements) || 0;
+         const year = Number(data.newThisYear) || 0;
+         const tags = Number(data.tagsCount) || 0;
+         renderStatsStorage({ used, totalMem, total, year, tags }, canvas, totalEl, yearEl, tagsEl, storageEl);
+       } catch (err) {
+         // 回退到默认：总 1024MB，已用尝试从 storageMB，若无则 0
+         const usedFallback = 0;
+         const totalFallback = 1024;
+         renderStatsStorage({ used: usedFallback, totalMem: totalFallback, total:0, year:0, tags:0 }, canvas, totalEl, yearEl, tagsEl, storageEl);
+       }
+     }
+
+     // 渲染仅与内存相关的统计与双扇区饼图
+     let pieSlices = [];
+     function renderStatsStorage(stat, canvas, totalEl, yearEl, tagsEl, storageEl) {
+       totalEl.textContent = String(stat.total || 0);
+       yearEl.textContent = String(stat.year || 0);
+       tagsEl.textContent = String(stat.tags || 0);
+       const used = Math.max(0, Math.round(Number(stat.used) || 0));
+       const totalMem = Math.max(1, Math.round(Number(stat.totalMem) || 1024));
+       storageEl.textContent = `${used}/${totalMem} MB`;
+
+       const ctx = canvas.getContext('2d');
+       const usedVal = used;
+       const freeVal = Math.max(0, totalMem - usedVal);
+       const values = [usedVal, freeVal];
+       const labels = ['已用 (MB)', '剩余 (MB)'];
+       const colors = ['#ff8a00', '#e5e7eb'];
+       const total = values.reduce((s,v)=>s+v, 0) || 1;
+       const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx,cy)-6;
+       ctx.clearRect(0,0,canvas.width,canvas.height);
+       let start = -Math.PI/2;
+       pieSlices = [];
+       for (let i=0;i<values.length;i++) {
+         const v = values[i];
+         const angle = (v/total) * Math.PI*2;
+         const end = start + angle;
+         ctx.beginPath();
+         ctx.moveTo(cx,cy);
+         ctx.arc(cx,cy,r,start,end);
+         ctx.closePath();
+         ctx.fillStyle = colors[i%colors.length];
+         ctx.fill();
+         pieSlices.push({ start, end, label: labels[i], value: v, color: colors[i%colors.length] });
+         start = end;
+       }
+       // 中心圆白色
+       ctx.fillStyle = '#fff';
+       ctx.beginPath();
+       ctx.arc(cx, cy, Math.floor(r*0.34), 0, Math.PI*2);
+       ctx.fill();
+     }
+
+      // 在脚本初始化时加载统计（也可在切换至 Dashboard 时触发）
+      // 尝试在初次脚本运行时调用
+     loadStats().catch(()=>{});
+
+     // tooltip logic 依赖 pieSlices，见先前 tooltip 绑定（已存在）
+     // 鼠标交互：在 canvas 上显示 tooltip
+     (function attachPieTooltip() {
+       const canvas = document.getElementById('stats-pie');
+       const tooltip = document.getElementById('pie-tooltip');
+       if (!canvas || !tooltip) return;
+       function hide() {
+         tooltip.style.display = 'none';
+       }
+       function onMouseMove(e) {
+         const rect = canvas.getBoundingClientRect();
+         const x = e.clientX - rect.left;
+         const y = e.clientY - rect.top;
+         const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx,cy)-6;
+         // 设备像素比考虑（canvas CSS size vs drawing size）：
+         const scaleX = canvas.width / rect.width;
+         const scaleY = canvas.height / rect.height;
+         const dx = (x * scaleX) - cx;
+         const dy = (y * scaleY) - cy;
+         const dist = Math.sqrt(dx*dx + dy*dy);
+         if (dist > r || pieSlices.length === 0) { hide(); return; }
+         let angle = Math.atan2(dy, dx); // -PI..PI
+         // 将角度从 -PI..PI 转为与扇区 start/end 同样的坐标（start基于 -PI/2）
+         // pieSlices start/end 已在同一坐标系（基于 -PI/2）
+         // 统一角度域到 -PI..3PI 以方便判断跨越 2π 的扇区（通常不跨越）
+         // 找到包含 angle 的扇区
+         let found = null;
+         for (let i=0;i<pieSlices.length;i++) {
+           const s = pieSlices[i].start;
+           const e = pieSlices[i].end;
+           // 直接比较 angle 与 s,e：如果角度系一致则 ok
+           if (angle >= s && angle < e) { found = pieSlices[i]; break; }
+           // 处理边界情况（当 start> end 跨越 2π，不太可能但稳健处理）
+           if (s > e && (angle >= s || angle < e)) { found = pieSlices[i]; break; }
+         }
+         if (!found) { hide(); return; }
+         // 显示 tooltip：内容 label: value
+         tooltip.textContent = `${found.label}：${found.value}`;
+         tooltip.style.display = 'block';
+         // 放置 tooltip，使用 fixed 定位以便跨容器显示
+         const offset = 12;
+         let left = e.clientX + offset;
+         let top = e.clientY + offset;
+         // 简单避免超出视窗右下边界
+         const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+         if (left + tw > window.innerWidth - 8) left = e.clientX - tw - offset;
+         if (top + th > window.innerHeight - 8) top = e.clientY - th - offset;
+         tooltip.style.left = `${left}px`;
+         tooltip.style.top = `${top}px`;
+       }
+       canvas.addEventListener('mousemove', onMouseMove);
+       canvas.addEventListener('mouseleave', hide);
+     })();
+
+     // 如果页面初始 active 是个人界面，则加载统计
+     const activeLink = document.querySelector('.sidebar a.active');
+     if (activeLink && activeLink.dataset.panel === 'profile') {
+       loadStats().catch(()=>{});
+     }
+    })();
+  </script>
+</body>
+</html>

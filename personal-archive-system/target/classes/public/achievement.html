@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>成就详情</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div style="max-width:980px;margin:28px auto;padding:16px;">
+    <p><a href="dashboard.html" style="color:#2563eb;text-decoration:underline;">← 返回仪表盘</a></p>
+    <main id="detail" class="panel" style="margin-top:12px;">
+      <h2 id="ach-title">加载中…</h2>
+      <!-- 成就图片容器 -->
+      <div id="ach-photo-container" style="margin:8px 0;"></div>
+      <div id="ach-meta" style="color:#6b7280;margin-bottom:12px;">&nbsp;</div>
+      <div id="ach-tags" style="margin-bottom:12px;"></div>
+      <div id="ach-desc" style="white-space:pre-wrap;color:#374151;"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      function getIdFromQuery() {
+        const s = location.search;
+        if (!s) return '';
+        const params = new URLSearchParams(s);
+        return params.get('id') || '';
+      }
+      function escapeHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+
+      async function loadDetail() {
+        const id = getIdFromQuery();
+        const titleEl = document.getElementById('ach-title');
+        const metaEl = document.getElementById('ach-meta');
+        const tagsEl = document.getElementById('ach-tags');
+        const descEl = document.getElementById('ach-desc');
+
+        if (!id) {
+          titleEl.textContent = '未指定成就';
+          descEl.textContent = '未提供成就 ID。';
+          return;
+        }
+
+        titleEl.textContent = '加载中…';
+        try {
+          // 首选后端按 id 接口（示例）
+          let res = await fetch('/api/user/achievements/' + encodeURIComponent(id), { credentials: 'same-origin' });
+          let data = null;
+          if (res.ok) {
+            data = await res.json();
+          } else {
+            // 回退：获取全部并按 id 查找
+            res = await fetch('/api/user/achievements', { credentials: 'same-origin' });
+            if (res.ok) {
+              const list = await res.json();
+              data = Array.isArray(list) ? list.find(it => String(it.id) === String(id)) : null;
+            }
+          }
+
+          if (!data) {
+            titleEl.textContent = '未找到成就';
+            descEl.textContent = '无法找到对应的成就记录。';
+            return;
+          }
+
+          titleEl.textContent = data.title || '未命名成就';
+          // 图片：支持 imageUrl 或 photoUrl 或 photo 字段（后端可返回完整 URL）
+          const photoUrl = data.imageUrl || data.photoUrl || data.photo || '';
+          const photoContainer = document.getElementById('ach-photo-container');
+          if (photoContainer) {
+            if (photoUrl) {
+              photoContainer.innerHTML = `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(data.title||'成就图片')}" style="max-width:100%;border-radius:8px;display:block;margin-bottom:8px;">`;
+            } else {
+              photoContainer.innerHTML = '';
+            }
+          }
+          metaEl.textContent = (data.date ? '日期：' + data.date : '') + (data.source ? (' • 来源：' + data.source) : '');
+          // 标签
+          tagsEl.innerHTML = (data.tags || []).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join(' ');
+          descEl.innerHTML = escapeHtml(data.description || '');
+        } catch (err) {
+          titleEl.textContent = '加载失败';
+          descEl.textContent = '获取成就详情出错，请稍后重试。';
+        }
+      }
+
+      loadDetail();
+    })();
+  </script>
+</body>
+</html>

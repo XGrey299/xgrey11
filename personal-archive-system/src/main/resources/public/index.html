@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>登录</title>
+	<meta name="description" content="登录页面，支持邮箱/手机号登录与第三方登录按钮。">
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+	<div class="box">
+		<div class="content">
+			<main>
+				<div class="login-wrapper" aria-labelledby="login-title">
+					<h1 id="login-title">登录</h1>
+
+					<!-- 切换按钮已移除，使用独立注册页（register.html）并在登录表单右下角显示注册链接 -->
+
+					<!-- 将登录表单改为语义化 form，便于可访问性与提交 -->
+					<form class="login-form form-panel" data-panel="login" action="#" method="post" aria-describedby="login-help">
+						<p id="login-help" class="sr-only">使用邮箱或手机号和密码登录。</p>
+
+						<div class="username form-item">
+							<label for="username">使用邮箱或者手机号</label>
+							<!-- pattern: 简单匹配邮箱或国内 11 位手机号 -->
+							<input id="username" name="username" type="text" class="input-item" placeholder="example@domain.com 或 13800000000" autocomplete="username" inputmode="email" required
+								pattern="(^.+@.+\..+$)|(^1\d{10}$)" aria-describedby="username-error">
+							<p id="username-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<div class="password form-item">
+							<label for="password">密码</label>
+							<input id="password" name="password" type="password" class="input-item" placeholder="请输入密码" autocomplete="current-password" required minlength="6" aria-describedby="password-error">
+							<p id="password-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<button class="login-btn" type="submit" aria-label="提交登录表单">登 录</button>
+						<!-- 注册链接：放在登录按钮的右下角 -->
+						<a class="register-link" href="register.html" aria-label="注册并登录">没有账号？去注册！</a>
+					</form>
+
+					<!-- 注册表单（默认隐藏） -->
+					<form class="register-form form-panel" data-panel="register" action="#" method="post" hidden aria-hidden="true" aria-describedby="register-help">
+						<p id="register-help" class="sr-only">注册新账号，支持邮箱或手机号。</p>
+
+						<div class="username form-item">
+							<label for="reg-username">邮箱或者手机号</label>
+							<input id="reg-username" name="reg-username" type="text" class="input-item" placeholder="example@domain.com 或 13800000000" autocomplete="username" inputmode="email" required
+								pattern="(^.+@.+\..+$)|(^1\d{10}$)" aria-describedby="reg-username-error">
+							<p id="reg-username-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<div class="password form-item">
+							<label for="reg-password">密码</label>
+							<input id="reg-password" name="reg-password" type="password" class="input-item" placeholder="至少 6 位密码" autocomplete="new-password" required minlength="6" aria-describedby="reg-password-error">
+							<p id="reg-password-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<div class="confirm-password form-item">
+							<label for="reg-confirm">确认密码</label>
+							<input id="reg-confirm" name="reg-confirm" type="password" class="input-item" placeholder="再次输入密码" required aria-describedby="reg-confirm-error">
+							<p id="reg-confirm-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<button class="register-btn" type="submit" aria-label="提交注册表单">注 册</button>
+					</form>
+
+					<div class="divider" aria-hidden="true">
+						<span class="line"></span>
+						<span class="divider-text">其他方式登录</span>
+						<span class="line"></span>
+					</div>
+
+					<div class="other-login-wrapper">
+						<!-- 将第三方图标放在可点击按钮内，提供可访问标签 -->
+						<button class="other-login-item" type="button" aria-label="使用 QQ 登录">
+							<img src="./asset/QQ.png" alt="使用 QQ 登录">
+						</button>
+						<button class="other-login-item" type="button" aria-label="使用微信登录">
+							<img src="./asset/WeChat.png" alt="使用微信登录">
+						</button>
+					</div>
+
+					<!-- 单独一行：忘记密码（橙色高亮） -->
+					<div class="forgot-reset-row" aria-hidden="false" style="text-align:center;margin-top:10px;">
+						<a class="other-login-item forgot-reset" href="reset.html" role="link" aria-label="重置密码">忘记密码？重置。</a>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<!-- 简单的前端校验脚本，便于开发和测试 -->
+	<script>
+		(function () {
+			// 面板切换（注册为独立页面链接）
+			const tabBtn = document.querySelector('.tab-btn');
+			const panels = document.querySelectorAll('.form-panel');
+			function showPanel(name) {
+				panels.forEach(p => {
+					const is = p.getAttribute('data-panel') === name;
+					p.hidden = !is;
+					p.setAttribute('aria-hidden', String(!is));
+				});
+				if (tabBtn) {
+					const active = tabBtn.getAttribute('data-target') === name;
+					tabBtn.classList.toggle('active', active);
+					tabBtn.setAttribute('aria-pressed', String(active));
+				}
+			}
+			if (tabBtn) {
+				tabBtn.addEventListener('click', () => {
+					showPanel(tabBtn.getAttribute('data-target'));
+				});
+			}
+
+			// 登录表单逻辑（保留原有逻辑）
+			const loginForm = document.querySelector('form[data-panel="login"]');
+			const username = document.getElementById('username');
+			const password = document.getElementById('password');
+			const usernameErr = document.getElementById('username-error');
+			const passwordErr = document.getElementById('password-error');
+
+			// 注册表单相关元素
+			const registerForm = document.querySelector('form[data-panel="register"]');
+			const rUsername = document.getElementById('reg-username');
+			const rPassword = document.getElementById('reg-password');
+			const rConfirm = document.getElementById('reg-confirm');
+			const rUsernameErr = document.getElementById('reg-username-error');
+			const rPasswordErr = document.getElementById('reg-password-error');
+			const rConfirmErr = document.getElementById('reg-confirm-error');
+
+			function clearError(el, errEl) {
+				if (el) el.removeAttribute('aria-invalid');
+				if (errEl) { errEl.classList.add('sr-only'); errEl.textContent = ''; }
+			}
+			function showError(el, errEl, msg) {
+				if (el) el.setAttribute('aria-invalid', 'true');
+				if (errEl) { errEl.classList.remove('sr-only'); errEl.textContent = msg; }
+			}
+
+			// 通用 username pattern
+			const unamePattern = /(^.+@.+\..+$)|(^1\d{10}$)/;
+
+			if (loginForm) {
+				loginForm.addEventListener('submit', async function (e) {
+					let valid = true;
+					clearError(username, usernameErr);
+					clearError(password, passwordErr);
+					const uval = username.value.trim();
+					const pval = password.value;
+
+					// 测试账号绕过：13034200343 / 123456 -> 直接进入 dashboard（仅测试用）
+					if (uval === '13034200343' && pval === '123456') {
+						e.preventDefault();
+						window.location.href = 'dashboard.html';
+						return;
+					}
+
+					if (!uval) {
+						showError(username, usernameErr, '请输入邮箱或手机号。');
+						username.focus();
+						valid = false;
+					} else if (!unamePattern.test(uval)) {
+						showError(username, usernameErr, '请输入有效的邮箱或 11 位手机号。');
+						valid = false;
+					}
+					if (!pval) {
+						showError(password, passwordErr, '请输入密码。');
+						if (valid) password.focus();
+						valid = false;
+					} else if (pval.length < 6) {
+						showError(password, passwordErr, '密码至少 6 位。');
+						if (valid) password.focus();
+						valid = false;
+					}
+					if (!valid) { e.preventDefault(); return; }
+					// 实际登录请求：POST 到 /api/auth/login（示例接口）
+					e.preventDefault();
+					try {
+						const res = await fetch('/api/auth/login', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'same-origin',
+							body: JSON.stringify({ username: uval, password: pval })
+						});
+						if (!res.ok) {
+							// 登录失败处理
+							const err = await res.json().catch(()=>({message:'登录失败'}));
+							alert(err.message || '登录失败');
+							return;
+						}
+						// 登录成功，跳转到仪表盘
+						window.location.href = 'dashboard.html';
+					} catch (err) {
+						alert('网络或服务器错误，无法登录（示例）。');
+					}
+				});
+			}
+
+			if (registerForm) {
+				registerForm.addEventListener('submit', function (e) {
+					let valid = true;
+					clearError(rUsername, rUsernameErr);
+					clearError(rPassword, rPasswordErr);
+					clearError(rConfirm, rConfirmErr);
+					const uval = rUsername.value.trim();
+					const pval = rPassword.value;
+					const cval = rConfirm.value;
+					if (!uval) {
+						showError(rUsername, rUsernameErr, '请输入邮箱或手机号。');
+						rUsername.focus();
+						valid = false;
+					} else if (!unamePattern.test(uval)) {
+						showError(rUsername, rUsernameErr, '请输入有效的邮箱或 11 位手机号。');
+						valid = false;
+					}
+					if (!pval) {
+						showError(rPassword, rPasswordErr, '请输入密码。');
+						if (valid) rPassword.focus();
+						valid = false;
+					} else if (pval.length < 6) {
+						showError(rPassword, rPasswordErr, '密码至少 6 位。');
+						if (valid) rPassword.focus();
+						valid = false;
+					}
+					if (pval !== cval) {
+						showError(rConfirm, rConfirmErr, '两次输入的密码不一致。');
+						if (valid) rConfirm.focus();
+						valid = false;
+					}
+					if (!valid) { e.preventDefault(); return; }
+					// TODO: 真实注册提交逻辑
+					e.preventDefault();
+					alert('注册：已通过前端校验（示例），表单未真正提交。');
+				});
+			}
+
+			// 初始展示登录面板
+			showPanel('login');
+		})();
+	</script>
+</body>
+
+</html>

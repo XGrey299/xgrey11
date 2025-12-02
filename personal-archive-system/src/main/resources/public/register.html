@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>注册</title>
+	<meta name="description" content="注册页面，支持邮箱/手机号注册。">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div class="box">
+		<div class="content">
+			<main>
+				<div class="login-wrapper" aria-labelledby="reg-title">
+					<h1 id="reg-title">注册</h1>
+
+					<!-- 返回登录链接 -->
+					<p style="text-align:center;margin-bottom:10px;">
+						<a href="login.html" aria-label="返回登录" style="color:inherit;text-decoration:underline;">返回登录</a>
+					</p>
+
+					<form class="register-form" action="#" method="post" aria-describedby="register-help" novalidate>
+						<p id="register-help" class="sr-only">注册新账号，支持邮箱或手机号。</p>
+
+						<div class="username form-item">
+							<label for="reg-username">邮箱或者手机号</label>
+							<input id="reg-username" name="reg-username" type="text" class="input-item" placeholder="example@domain.com 或 13800000000" autocomplete="username" inputmode="email" required
+								pattern="(^.+@.+\..+$)|(^1\d{10}$)" aria-describedby="reg-username-error">
+							<p id="reg-username-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<div class="password form-item">
+							<label for="reg-password">密码</label>
+							<input id="reg-password" name="reg-password" type="password" class="input-item" placeholder="至少 6 位密码" autocomplete="new-password" required minlength="6" aria-describedby="reg-password-error">
+							<p id="reg-password-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<div class="confirm-password form-item">
+							<label for="reg-confirm">确认密码</label>
+							<input id="reg-confirm" name="reg-confirm" type="password" class="input-item" placeholder="再次输入密码" required aria-describedby="reg-confirm-error">
+							<p id="reg-confirm-error" class="form-error sr-only" aria-live="polite"></p>
+						</div>
+
+						<button class="register-btn" type="submit" aria-label="注册并登录">注册并登录</button>
+					</form>
+
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<script>
+		(function () {
+			const form = document.querySelector('.register-form');
+			if (!form) return;
+
+			const rUsername = document.getElementById('reg-username');
+			const rPassword = document.getElementById('reg-password');
+			const rConfirm = document.getElementById('reg-confirm');
+			const rUsernameErr = document.getElementById('reg-username-error');
+			const rPasswordErr = document.getElementById('reg-password-error');
+			const rConfirmErr = document.getElementById('reg-confirm-error');
+
+			function clearError(el, errEl) {
+				if (el) el.removeAttribute('aria-invalid');
+				if (errEl) { errEl.classList.add('sr-only'); errEl.textContent = ''; }
+			}
+			function showError(el, errEl, msg) {
+				if (el) el.setAttribute('aria-invalid', 'true');
+				if (errEl) { errEl.classList.remove('sr-only'); errEl.textContent = msg; }
+			}
+
+			const unamePattern = /(^.+@.+\..+$)|(^1\d{10}$)/;
+
+			form.addEventListener('submit', function (e) {
+				let valid = true;
+				clearError(rUsername, rUsernameErr);
+				clearError(rPassword, rPasswordErr);
+				clearError(rConfirm, rConfirmErr);
+
+				const uval = rUsername.value.trim();
+				const pval = rPassword.value;
+				const cval = rConfirm.value;
+
+				if (!uval) {
+					showError(rUsername, rUsernameErr, '请输入邮箱或手机号。');
+					rUsername.focus();
+					valid = false;
+				} else if (!unamePattern.test(uval)) {
+					showError(rUsername, rUsernameErr, '请输入有效的邮箱或 11 位手机号。');
+					valid = false;
+				}
+
+				if (!pval) {
+					showError(rPassword, rPasswordErr, '请输入密码。');
+					if (valid) rPassword.focus();
+					valid = false;
+				} else if (pval.length < 6) {
+					showError(rPassword, rPasswordErr, '密码至少 6 位。');
+					if (valid) rPassword.focus();
+					valid = false;
+				}
+
+				if (pval !== cval) {
+					showError(rConfirm, rConfirmErr, '两次输入的密码不一致。');
+					if (valid) rConfirm.focus();
+					valid = false;
+				}
+
+				if (!valid) { e.preventDefault(); return; }
+				// 示例：POST 到 /api/auth/register，注册成功后跳转到 dashboard.html
+				e.preventDefault();
+				(async function () {
+					try {
+						const res = await fetch('/api/auth/register', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'same-origin',
+							body: JSON.stringify({ username: uval, password: pval })
+						});
+						if (!res.ok) {
+							const err = await res.json().catch(()=>({message:'注册失败'}));
+							alert(err.message || '注册失败');
+							return;
+						}
+						// 注册成功后跳转至仪表盘（或登录页）
+						window.location.href = 'dashboard.html';
+					} catch (err) {
+						alert('网络或服务器错误，无法注册（示例）。');
+					}
+				})();
+			});
+		})();
+	</script>
+</body>
+</html>

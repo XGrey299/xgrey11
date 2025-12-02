@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>重置密码</title>
+  <meta name="description" content="重置密码流程：输入邮箱/手机号 -> 验证码 -> 新密码。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="box">
+    <div class="content">
+      <main>
+        <div class="login-wrapper" aria-labelledby="reset-title">
+          <h1 id="reset-title">重置密码</h1>
+
+          <p style="text-align:center;margin-bottom:10px;">
+            <a href="index.html" aria-label="返回登录" style="color:inherit;text-decoration:underline;">返回登录</a>
+          </p>
+
+          <!-- Step 1: 请求验证码 -->
+          <form id="reset-request" class="form-panel reset-form" aria-describedby="reset-help">
+            <p id="reset-help" class="sr-only">输入邮箱或手机号以接收重置验证码。</p>
+
+            <div class="username form-item">
+              <label for="reset-username">邮箱或手机号</label>
+              <input id="reset-username" name="reset-username" type="text" class="input-item" placeholder="example@domain.com 或 13800000000" autocomplete="username" inputmode="email" required
+                pattern="(^.+@.+\..+$)|(^1\d{10}$)" aria-describedby="reset-username-error">
+              <p id="reset-username-error" class="form-error sr-only" aria-live="polite"></p>
+            </div>
+
+            <button id="send-code" class="login-btn" type="submit">发送验证码</button>
+          </form>
+
+          <!-- Step 2: 输入验证码并设置新密码（默认隐藏） -->
+          <form id="reset-confirm" class="form-panel reset-form" aria-hidden="true" hidden>
+            <div class="form-item">
+              <label for="reset-code">验证码</label>
+              <input id="reset-code" name="reset-code" type="text" class="input-item" placeholder="6 位验证码" inputmode="numeric" required aria-describedby="reset-code-error">
+              <p id="reset-code-error" class="form-error sr-only" aria-live="polite"></p>
+            </div>
+
+            <div class="form-item">
+              <label for="reset-newpwd">新密码</label>
+              <input id="reset-newpwd" name="reset-newpwd" type="password" class="input-item" placeholder="至少 6 位" required minlength="6" aria-describedby="reset-newpwd-error">
+              <p id="reset-newpwd-error" class="form-error sr-only" aria-live="polite"></p>
+            </div>
+
+            <div class="form-item">
+              <label for="reset-confirmpwd">确认新密码</label>
+              <input id="reset-confirmpwd" name="reset-confirmpwd" type="password" class="input-item" placeholder="再次输入密码" required aria-describedby="reset-confirmpwd-error">
+              <p id="reset-confirmpwd-error" class="form-error sr-only" aria-live="polite"></p>
+            </div>
+
+            <button id="confirm-reset" class="login-btn" type="submit">确认并重置</button>
+            <p style="text-align:center;margin-top:10px;">
+              <button id="resend-code" type="button" class="other-login-item" style="border-radius:20px;">重新发送验证码</button>
+            </p>
+          </form>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const reqForm = document.getElementById('reset-request');
+      const confForm = document.getElementById('reset-confirm');
+      const titleEl = document.getElementById('reset-title');
+      // 页面加载时，如果之前已发送验证码（sessionStorage 标记），直接显示确认步骤
+      if (sessionStorage.getItem('resetStep') === 'confirm') {
+        // 切换到确认表单并更新标题
+        reqForm && (reqForm.hidden = true, reqForm.setAttribute('aria-hidden','true'));
+        confForm && (confForm.hidden = false, confForm.setAttribute('aria-hidden','false'));
+        if (titleEl) titleEl.textContent = '输入您的新密码';
+      }
+
+      const uname = document.getElementById('reset-username');
+      const unameErr = document.getElementById('reset-username-error');
+      const codeInput = document.getElementById('reset-code');
+      const codeErr = document.getElementById('reset-code-error');
+      const newPwd = document.getElementById('reset-newpwd');
+      const newPwdErr = document.getElementById('reset-newpwd-error');
+      const confPwd = document.getElementById('reset-confirmpwd');
+      const confPwdErr = document.getElementById('reset-confirmpwd-error');
+      const resendBtn = document.getElementById('resend-code');
+
+      const unamePattern = /(^.+@.+\..+$)|(^1\d{10}$)/;
+
+      function showError(el, errEl, msg) {
+        if (el) el.setAttribute('aria-invalid', 'true');
+        if (errEl) { errEl.classList.remove('sr-only'); errEl.textContent = msg; }
+      }
+      function clearError(el, errEl) {
+        if (el) el && el.removeAttribute('aria-invalid');
+        if (errEl) errEl && (errEl.classList.add('sr-only'), errEl.textContent = '');
+      }
+      function switchToConfirm() {
+        reqForm.hidden = true;
+        reqForm.setAttribute('aria-hidden', 'true');
+        confForm.hidden = false;
+        confForm.setAttribute('aria-hidden', 'false');
+        if (titleEl) titleEl.textContent = '输入您的新密码';
+      }
+
+      // 模拟发送验证码，替换为真实接口
+      reqForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearError(uname, unameErr);
+        const val = uname.value.trim();
+        if (!val) { showError(uname, unameErr, '请输入邮箱或手机号。'); uname.focus(); return; }
+        if (!unamePattern.test(val)) { showError(uname, unameErr, '请输入有效的邮箱或 11 位手机号。'); return; }
+
+        const sendBtn = document.getElementById('send-code');
+        sendBtn.disabled = true;
+        sendBtn.textContent = '发送中...';
+
+        // fetch（替换 URL）
+        fetch('/api/reset/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: val })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('网络错误');
+          return res.json();
+        })
+        .then(data => {
+          // 成功后设置步骤标记并刷新页面以进入“输入新密码”流程
+          try { sessionStorage.setItem('resetStep', 'confirm'); } catch (err) {}
+          // 强制刷新页面，页面加载时会读取标记并切换到确认表单
+          location.reload();
+        })
+        .catch(err => {
+          sendBtn.disabled = false;
+          sendBtn.textContent = '发送验证码';
+          alert('发送验证码失败（示例），请稍后重试。');
+        });
+      });
+
+      // 重新发送
+      resendBtn && resendBtn.addEventListener('click', function () {
+        const val = uname.value.trim();
+        if (!val) { showError(uname, unameErr, '请先输入邮箱或手机号并发送验证码。'); return; }
+        alert('已重新发送（示例）');
+      });
+
+      // 确认并重置
+      confForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearError(codeInput, codeErr);
+        clearError(newPwd, newPwdErr);
+        clearError(confPwd, confPwdErr);
+        let valid = true;
+        const code = codeInput.value.trim();
+        const np = newPwd.value;
+        const cp = confPwd.value;
+        if (!code) { showError(codeInput, codeErr, '请输入验证码。'); codeInput.focus(); valid = false; }
+        if (!np) { showError(newPwd, newPwdErr, '请输入新密码。'); if (valid) newPwd.focus(); valid = false; }
+        else if (np.length < 6) { showError(newPwd, newPwdErr, '密码至少 6 位。'); if (valid) newPwd.focus(); valid = false; }
+        if (np !== cp) { showError(confPwd, confPwdErr, '两次输入的密码不一致。'); if (valid) confPwd.focus(); valid = false; }
+
+        if (!valid) return;
+
+        const confirmBtn = document.getElementById('confirm-reset');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '提交中...';
+
+        // 请求：替换为真实后端接口
+        fetch('/api/reset/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: uname.value.trim(), code: code, newPassword: np })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('网络错误');
+          return res.json();
+        })
+        .then(data => {
+          // 清除步骤标记并返回登录
+          try { sessionStorage.removeItem('resetStep'); } catch (err) {}
+          alert('重置成功，请使用新密码登录。');
+          window.location.href = 'index.html';
+        })
+        .catch(err => {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = '确认并重置';
+          alert('重置失败（示例），请稍后重试或联系管理员。');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
